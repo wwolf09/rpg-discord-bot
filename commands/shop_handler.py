@@ -1,9 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-
-# Replace these with your actual imports
-
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
