@@ -16,7 +16,6 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix=',', intents=intents)
-
 class AdminCommands(app_commands.Group):
 
     # async def AutoComplete(self,interaction: discord.Interaction, current: str, List[app_commands.Choice[str]]:
@@ -44,10 +43,11 @@ class AdminCommands(app_commands.Group):
             return
 
         user_stats = db.dget(str(user.id), "stats")
-        hp = user_stats["Health"]
-        hp += amount
+        user_stats['Health'] += amount
         db.dadd(str(user.id), user_stats)
         db.dump()
+        await interaction.response.send_message(
+            f"Updated {user.mention}'s HP by {amount}. New HP: {user_stats['Health']}",ephemeral=True)
 
     @app_commands.command(name="mp")
     async def MP(self, interaction: discord.Interaction, amount: int, user: discord.Member):
@@ -55,8 +55,7 @@ class AdminCommands(app_commands.Group):
             return
 
         user_stats = db.dget(str(user.id), "stats")
-        hp = user_stats["Mana"]
-        hp += amount
+        user_stats['Mana'] += amount
         db.dadd(str(user.id), user_stats)
         db.dump()
 
@@ -66,3 +65,5 @@ class AdminCommands(app_commands.Group):
             return
 
         db.dget(str(user.id), f"inventory_{str(user.id)}")
+
+    # @app_commands.command(name="boss")

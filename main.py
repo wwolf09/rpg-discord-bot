@@ -21,18 +21,13 @@ import os
 from commands.shop_handler import shop
 from commands.games import daily, roulette
 from commands.admin import AdminCommands
+from events.boss import boss
 
 # Initialize the Discord client
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix=',', intents=intents)
-
-client.tree.add_command(shop)
-client.tree.add_command(daily)
-client.tree.add_command(roulette)
-client.tree.add_command(AdminCommands(name="admin", description="admin commands for quix"))
-
 
 DC_TOKEN = os.getenv("TOKEN")
 from db import db
@@ -175,6 +170,11 @@ async def class_pick(interaction: discord.Interaction):
 
 @client.event
 async def on_ready():
+    client.tree.add_command(shop)
+    client.tree.add_command(daily)
+    client.tree.add_command(roulette)
+    client.tree.add_command(boss(name="boss", description="Starts a boss raid"))
+    client.tree.add_command(AdminCommands(name="admin", description="admin commands for quix"))
     await client.tree.sync()
     print('Bot is ready.')
 
@@ -420,7 +420,7 @@ async def start_dungeon(interaction: discord.Interaction):
     leader_id = interaction.user.id
 
     if leader_id in active_dungeon_sessions:
-        await interaction.response.send_message(
+        await interaction.followup.send_message(
             content="You are already in an active dungeon session!",
             ephemeral=True
         )
@@ -456,7 +456,7 @@ async def start_dungeon(interaction: discord.Interaction):
         color=discord.Color.gold()
     )
     view = DungeonJoinView(session, active_dungeon_sessions)
-    recruitment_msg = await interaction.channel.send(embed=embed, view=view)
+    recruitment_msg = await interaction.followup.send(embed=embed, view=view)
     session.recruitment_message = recruitment_msg
 
 @client.tree.command(name="ping")

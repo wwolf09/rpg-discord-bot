@@ -90,7 +90,6 @@ class CombatView(View):
         self.add_item(UseButton(self))
         self.add_item(PassButton(self))
 
-
 class SkillSelect(Select):
     def __init__(self, view, skills):
         options = [
@@ -123,6 +122,7 @@ class SkillSelect(Select):
             pass
         elif user_mana > skill_mana_cost:
             user_mana -= skill_mana_cost
+            db.dset(user_id, ("stats", user_mana))
             print(f"[USER_MANA_AFTER]: {user_mana}")
             db.dump()
         elif user_mana < skill_mana_cost:
@@ -325,13 +325,11 @@ class ConsumableSelect(discord.ui.Select):
         await interaction.response.send_message(embed=embed)
         self.parent_view.stop()
 
-
-
 class TargetSelect(discord.ui.Select):
     def __init__(self, view, enemies):
         options = [
             discord.SelectOption(
-                label=f"{enemy['name']} ({enemy['hp']} HP)",
+                label=f"{enemy['name']} {(enemy['hp'] or enemy['base_hp'])} HP)",
                 value=str(index)
             )
             for index, enemy in enumerate(enemies)

@@ -1,5 +1,4 @@
 from dis import disco
-
 from CombatView import CombatView
 import quiz_questions
 
@@ -111,6 +110,7 @@ class CombatTurnManager:
             return True  # Defeat
 
         return False
+
 
 def get_user_stats(user_id):
     try:
@@ -269,6 +269,130 @@ async def start_turn(channel: discord.TextChannel, turn_manager: CombatTurnManag
     else:
         enemy_index = actor
         enemy = turn_manager.enemies[enemy_index]
+
+        if enemy.get("is_boss"):
+            if enemy["hp"] <= 0:
+                await channel.send(f"☠️ **{enemy['name']}** is defeated and cannot act.")
+                await asyncio.sleep(1.2)
+                turn_manager.advance_turn()
+                await start_turn(channel, turn_manager)
+                return
+
+            await apply_status_effects(enemy, channel)
+
+            if enemy["hp"] <= 0:
+                await channel.send(f"☠️ **{enemy['name']}** was defeated by status effects!")
+                await asyncio.sleep(1.2)
+                turn_manager.advance_turn()
+                await start_turn(channel, turn_manager)
+                return
+
+            import random
+            alive_targets = [
+                pid for pid in turn_manager.party
+                if db.dget(str(pid), "stats").get("Health", 0) > 0
+            ]
+
+            party_health = 0
+            for pid in turn_manager.party:
+                party_health += db.dget(str(pid), "stats").get("MaxHealth")
+            boss_dmg = party_health * 0.3
+
+            if not alive_targets:
+                await turn_manager.session.end_dungeon("☠️ The party was wiped out!")
+                return
+
+            target_id = random.choice(alive_targets)
+            user_id_str = str(target_id)
+            member = channel.guild.get_member(target_id)
+
+            stats = db.dget(user_id_str, "stats") or {}
+            user_class = db.dget(user_id_str, "class")
+            max_hp = stats.get("MaxHealth", 100)
+            current_hp = stats.get("Health", 100)
+
+            agility = stats.get("Agility", 1)
+            dodge_chance = min(agility * 0.01, 0.5)
+
+            # Use the centralized dodge check
+            if check_dodge(stats):
+                embed = discord.Embed(
+                    title=f"**{enemy['name']}** attacks!",
+                    description=f"hold on, somethings wrong!",
+                    color=discord.Color.red()
+                )
+                await channel.send(embed=embed)
+                await asyncio.sleep(1.5)
+                dodge = discord.Embed(
+                    title=f"**{member.display_name} dodged the attack!**",
+                    color=discord.Color.green()
+                )
+                await channel.send(embed=dodge)
+                turn_manager.advance_turn()
+                await start_turn(channel, turn_manager)
+                return
+
+            # Apply damage
+
+            # damage = enemy["power"]
+            # new_hp = max(current_hp - int(damage), 0)
+            # stats["Health"] = new_hp
+            # db.dadd(user_id_str, ("stats", stats))
+            # Boss skips skill (out of skills)
+            boss_skills = enemy.get("skills", [])
+            boss_name = enemy.get("name")
+
+            if not boss_skills:
+                await channel.send(content="Boss is confused!")
+
+            chosen_skill = random.choice(boss_skills)
+            skill_name = chosen_skill["name"]
+            dialogue = chosen_skill.get("dialogue", None)
+            effect = chosen_skill.get("effect")
+            target_type = chosen_skill.get("target", "single")
+            skill_power = chosen_skill.get("power", 0.1)
+
+            embed = discord.Embed(title=f"✨ {boss_name} used {skill_name} ✨", color=discord.Color.red())
+
+            if effect == "summon":
+                summoned = enemy.get("summons", [])
+                for summon in summoned:
+                    turn_manager.enemies.append(summon)
+                    print(summon)
+                    print(turn_manager.enemies)
+                embed.description = str(dialogue)
+            elif effect == "healing":
+                max_hp = enemy.get("base_hp", 9999999)
+                enemy["hp"] += min(max_hp * skill_power, max_hp)
+                embed.description = str(dialogue)
+            elif target_type=="all":
+                for targets in alive_targets:
+                    stats = db.dget(str(targets), "stats") or {}
+                    current_hp = stats.get("Health")
+                    stats["Health"] = max(0, current_hp - boss_dmg)
+                    db.dadd(str(targets), ("stats", stats))
+                    # send all party HP after this
+            elif target_type == "single":
+                stats = db.dget(str(target_id), "stats") or {}
+                user_current_hp = stats.get("Health", 100)
+                stats["Health"] = max(0, user_current_hp - boss_dmg)
+                db.dadd(str(target_id), ("stats", stats))
+                embed.description =f"<@{target_id}> took **{boss_dmg}** damage!"
+
+            max_hp = enemy.get("base_hp",9999999)
+            boss_current_hp = enemy.get("hp", max_hp)
+            hp_bar = create_hp_bar(boss_current_hp, max_hp)
+            embed.add_field(name=f"{boss_name} HP", value=hp_bar, inline=False)
+
+            await apply_status_effects(enemy, channel)
+            await channel.send(embed=embed)
+            await asyncio.sleep(1.5)
+
+            turn_manager.advance_turn()
+            await start_turn(channel, turn_manager)
+
+        # ------- NORMAL ENEMY ---------
+        #################################
 
         if enemy["hp"] <= 0:
             await channel.send(f"☠️ **{enemy['name']}** is defeated and cannot act.")
