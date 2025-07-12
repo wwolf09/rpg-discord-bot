@@ -106,7 +106,7 @@ classes = {
         "MaxMana": 0,
         "CritChance": 30,          # High crit chance
         "CritDmg": 2.0,            # Needs crit dmg stats
-        "Agility": 40,             # More agility-based
+        "Agility": 20,             # More agility-based
         "Armor": 10,
         "ManaRegen": 0,
         "HPRegen": 2,

@@ -3,6 +3,7 @@ def create_boss():
         "name": "Azaroth, the Flame Tyrant",
         "base_hp": 3000,
         "hp": 3000,
+        "debuffs": [],
         "skills": [
             {
                 "name": "Inferno Burst",
@@ -27,33 +28,38 @@ def create_boss():
                 "type": "summon",
                 "effect": "summon",
                 "cooldown": 5,
-                "dialogue": "Summons 2 Fireling minions to aid him.",
+                "dialogue": " '*COME! Let us show our wrath.*'",
                 "target": None
             }
         ],
-        "cooldowns": {0: 0, 1: 0, 2: 0},  # Track cooldowns for skills
+        "cooldowns": {0: 0, 1: 0, 2: 0},
         "turn_count": 0,
-        "debuffs": [],
         "is_boss": True,
-        "summons": [  # Changed from {} to []
+        "summons": [
             {
                 "name": "Dark Mage",
                 "base_hp": 100,
                 "hp": 100,
-                "base_power": 0,
-                "skills": {
-                    "name": "Flaming Heal",
-                    "effect": "heal",
-                    "power": 2.0,
-                    "target": "all"
-                }
+                "power": 10,  # Fixed
+                "debuffs": [],  # Added
+                "skills": [
+                    {
+                        "name": "Flaming Heal",
+                        "effect": "heal",
+                        "power": 2.0,
+                        "target": "all"
+                    }
+                ],
+                "is_summon": True,
             },
             {
                 "name": "Dark Knight",
                 "base_hp": 500,
                 "hp": 500,
-                "base_power": 2,
-                "difficulty": "easy"
+                "power": 2,  # Fixed
+                "debuffs": [],  # Added
+                "difficulty": "easy",
+                "is_summon": True
             },
         ],
     }
